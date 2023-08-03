@@ -200,7 +200,7 @@ faops size ../RefSeq/plasmid.fa > refseq.sizes
 
 # 默认的字段分隔符：TSV 使用 TAB，wc 是 Word Count 的缩写，计数，-l 选项可以获得指定文件内容的行数,每行以回车键作为结尾进行统计
 #筛选出refseq.sizes文件里面序列长度小于等于2000的序列，并输出行数，2:2000中的2指的是第二列
-#tsv-filter命令 https://github.com/eBay/tsv-utils/blob/master/docs/tool_reference/tsv-filter.md
+#tsv-filter命令 用于处理以制表符分隔的文件（TSV格式） 具体用法见https://github.com/eBay/tsv-utils/blob/master/docs/tool_reference/tsv-filter.md
 
 tsv-filter refseq.sizes --le 2:2000 | wc -l
 
@@ -316,23 +316,24 @@ cat redundant.tsv | wc -l
 
 . join()：将序列（也就是字符串、元组、列表、字典）中的元素以指定的字符连接生成一个新的字符串。
 \t ：表示空4个字符，类似于文档中的缩进功能，相当于按一个Tab键。\n ：表示换行
-#-M 引用模;-n 循环,一行一行来处理文件;-l参数,用来给每一个输出加\n;-a 打开自动分离(split)模式,根据紧跟的分离号被分离然后放入缺省数组@F(缺省参数,是在声明函数的某个参数的时候为之指定一个默认值，在调用该函数的时候如果采用该默认值，你就无须指定该参数)；-F 修改分离符;-e 一行程序
+#-M 引用模;-n 循环,一行一行来处理文件;-l 参数表示自动去除行尾的换行符;-a 参数表示按照指定分隔符（\t）将每行数据分割成数组 @F(缺省参数,是在声明函数的某个参数的时候为之指定一个默认值，在调用该函数的时候如果采用该默认值，你就无须指定该参数)；-F 修改分离符;-e 一行程序
 #Graph::Undirected模代表无向图，可以将三至更多的最短关系计算出来
 #qq{ }	为字符串添加双引号
 g	替换所有匹配的字符串
 #->	箭号用于指定一个类的方法
 cat redundant1.tsv |
-    perl -nla -F"\t" -MGraph::Undirected -e '   
+    perl -nla -F"\t" -MGraph::Undirected -e ' 
+#创建了一个名为 $g 的无向图对象  
             BEGIN {
             our $g = Graph::Undirected->new;
         }
 
-        $g->add_edge($F[0], $F[1]); #此处的$F[0], $F[1]指每一行互相比对的文件
+        $g->add_edge($F[0], $F[1]); #对于每一行输入数据，将第一列和第二列作为顶点，使用 $g->add_edge() 方法将它们添加到图中
 
         END {
             for my $cc ( $g->connected_components ) {
                 print join qq{\t}, sort @{$cc}; 
-            }
+            }#使用 $g->connected_components 获取图中的连通分量
         }
     ' \
     > connected_components.tsv
@@ -402,19 +403,25 @@ cat dist_full.tsv |
     > connected.tsv
 
 head -n 5 connected.tsv
+NZ_CP014966.1   NZ_JAGEOP010000044.1    0.0397669       0       277/1000
+NZ_OM311153.1   NZ_JAGJVE010000023.1    0.0363341       0       304/1000
+NZ_JRKV01000052.1       NZ_JAGMUW010000160.1    0.0466675       0       231/1000
+NC_024969.1     NZ_LGYC01000043.1       0.0455159       0       238/1000
+NZ_JAJQQO010000008.1    NZ_LJCD01000031.1       0.0228571       0       448/1000
 
 cat connected.tsv | wc -l
+344446
 
 mkdir -p group
 cat connected.tsv |
     perl -nla -F"\t" -MGraph::Undirected -MPath::Tiny -e '
-    #Path::Tiny 文件路径实用程序
+    #Path::Tiny 文件路径实用程序；-e 参数后面跟着实际的 Perl 代码
         BEGIN {
             our $g = Graph::Undirected->new;
         }
 
         $g->add_edge($F[0], $F[1]);  #边界设定为比较的两个序列
-
+#定义了空数组 @rare，用于存放稀缺的顶点；定义了一个变量 $serial，用于给每个组分配唯一的序号
         END {
             my @rare;
             my $serial = 1;
@@ -430,16 +437,16 @@ cat connected.tsv |
             for my $cc ( @ccs ) {
                 my $count = scalar @{$cc};
                 if ($count < 50) {
-                    push @rare, @{$cc};  # 出现次数很少的序列放在rare中,push可向数组的末尾添加一个或多个元素，并返回新的长度。
+                    push @rare, @{$cc};  # push可向数组的末尾添加一个或多个元素，并返回新的长度
                 }
                 else {
                     path(qq{group/$serial.lst})->spew(map {qq{$_\n}} @{$cc});
-                    $serial++;  # 每一个lst递增
+                    $serial++;  #连通分量数组 @ccs。首先，计算连通分量内的顶点数量。如果数量小于 50，则将这些顶点添加到 @rare 数组中。否则，将这些顶点存储到以 $serial 命名的文件中，并递增 $serial 的值
                 }
             }
             path(qq{group/00.lst})->spew(map {qq{$_\n}} @rare);
-            # 00.lst是存储了rare序列
-            path(qq{grouped.lst})->spew(map {qq{$_\n}} $g->vertices);
+            # 将 @rare 数组中的顶点写入名为 "group/00.lst" 的文件中
+            path(qq{grouped.lst})->spew(map {qq{$_\n}} $g->vertices);#将整个无向图中的所有顶点写入名为 "grouped.lst" 的文件中
         }
     '
 ## $a<=>$b;
@@ -464,8 +471,26 @@ faops some -i ../nr/refseq.nr.fa grouped.lst stdout |
 # grouped.lst等于connected.tsv，distance < 0.05；
 # lonely.lst等于refseq.nr.fa减去grouped.lst（connected.tsv），和其他序列差异比较小。
 
-wc -l group/*
-
+wc -l group/*.lst
+  7319 group/00.lst
+    60 group/10.lst
+    57 group/11.lst
+    57 group/12.lst
+    56 group/13.lst
+    53 group/14.lst
+  9306 group/1.lst
+   282 group/2.lst
+   222 group/3.lst
+   106 group/4.lst
+    95 group/5.lst
+    78 group/6.lst
+    75 group/7.lst
+    63 group/8.lst
+    62 group/9.lst
+ 13105 group/lonely.lst
+ 30996 total
+ 
+# 每一个lst中序列再互相比对
 find group -maxdepth 1 -type f -name "[0-9]*.lst" | sort |
     parallel -j 4 --line-buffer '
         echo >&2 "==> {}"
@@ -476,11 +501,331 @@ find group -maxdepth 1 -type f -name "[0-9]*.lst" | sort |
         mash dist -p 6 {}.msh {}.msh > {}.tsv
     '
 
+# 对.lst.tsv-分别建树，并把每个树的分组分别存储在{.}.groups.tsv文件中
 
+find group -maxdepth 1 -type f -name "[0-9]*.lst.tsv" | sort |
+    parallel -j 4 --line-buffer '
+        echo >&2 "==> {}"
 
+        cat {} |
+            tsv-select -f 1-3 |
+            #TSV-SELECT 读取文件或标准输入，并将所选字段写入标准输出。字段按列出的顺序写入.--f|fields <field-list>- 要保留的字段。字段按列出的顺序输出。
+            Rscript -e '\''
+                library(readr);读取矩形文本数据•阅读器
+                library(tidyr);类似Excel中数据透视表
+                library(ape);系统发育与进化分析(ape)包含了很多序列和进化树的操作
+            #read_tsv 函数读取标准输入中的数据，并命名为 pair_dist。该数据包含两列，分别表示顶点对和对应的距离。
+                pair_dist <- read_tsv(file("stdin"), col_names=F);#file是一个带分隔符的ASCII文本文件，col_names列向量
+                tmp <- pair_dist %>%
+            #将顶点对作为列名，距离作为值，并用默认值 1.0 填充缺失值。
+                    pivot_wider( names_from = X2, values_from = X3, values_fill = list(X3 = 1.0) )
+                    #用%>%来强调操作序列，pivot_wider()函数可用于将数据帧从长格式转换为宽格式
+            #将转换后的数据转换为矩阵，去除第一列，并将第一列作为行名
+                tmp <- as.matrix(tmp)#tmp临时文件
+                mat <- tmp[,-1]#mat构造二维向量
+                rownames(mat) <- tmp[,1]#rownames，行名称
 
+                dist_mat <- as.dist(mat)#as.dist 函数将矩阵转换为距离矩阵
+                clusters <- hclust(dist_mat, method = "ward.D2")#hclust 函数基于距离矩阵进行层次聚类，并选择 "ward.D2" 方法-ward离差平方和法,
+            #将聚类结果转换为基本树结构，并使用 write.tree 函数将树写入以文件名为基础的 ".tree.nwk" 文件;phylo的本质是list，包括进化树末端分类单元名称（tip label），枝长（edge length）等
+                tree <- as.phylo(clusters)
+                write.tree(phy=tree, file="{.}.tree.nwk")
 
+                group <- cutree(clusters, h=0.2) #cutree 函数将聚类结果划分为若干组，阈值参数设置为 0.2
+                groups <- as.data.frame(group)#将划分结果转换为数据框
+                groups$ids <- rownames(groups)#并添加一列作为顶点标识符
+                rownames(groups) <- NULL
+                groups <- groups[order(groups$group), ]
+                write_tsv(groups, "{.}.groups.tsv")
+            '\''
+    '
+运行中出现问题
+Error in library(readr) : there is no package called ‘readr’
+Execution halted
+解决方案
+1.首先在R里面安装
+install.packages("BiocManager")
+BiocManager::install("readr", force = TRUE)
+library(readr)
+Warning message:
+程辑包‘readr’是用R版本4.2.3 来建造的 ，更新R
+卸载旧版本，安装新的4.3.1
+出现问题，linux下无法调用最新的R4.3.1，一直调用的是R4.2.2.因为下载的是windows的R，与ubuntu里面的R4.2.2不一样
+2.始终在终端里安装（正确的）
+brew uninstall R
+source ~/.bashrc #source命令通常用于重新执行刚修改的初始化文件，使之立即生效，而不必注销并重新登录
+R
+sudo apt install r-base r-base-dev #Installing R in Ubuntu，apt 命令：查找、安装、升级、删除某一个、一组甚至全部软件包
+R #检查版本是否正确，此时相当于进入到R里面，输入符号是>，
+> install.packages("readr")
+>library(readr)
+q()#退出R
 
+# subgroup
+mkdir -p subgroup
+cp group/lonely.lst subgroup/
+
+find group -name "*.groups.tsv" | sort |
+    parallel -j 1 -k ' #--keep-order/-k   强制使输出与参数保持顺序 --keep-order/-k
+        cat {} | sed -e "1d" | xargs -I[] echo "{/.}_[]"
+        # sed主要是以行为单位进行处理，可以将数据行进行替换、删除、新增、选取等特定工作.sed -e 多次编辑不需要管道符;删除第一行的列名。d代表删除 d前面的数字代表删除第一行，该命令不会修改文件本身
+        # xargs 是一个强有力的命令，它能够捕获一个命令的输出，然后传递给另外一个命令，适用于不适合用管道符的命令。规定命名方法 例：{}=group/1.lst.groups.tsv；i 或者是-I，将xargs的每项名称，一般是一行一行赋值给 {}，可以用 {} -代替，I[]从标准读取的名称=每一个聚类的序号；{/.}=1.lst.groups；{/.}_[]=1.lst.groups_1
+    ' |
+    sed -e 's/.lst.groups_/_/' |  #s ：取代，即1_1
+    perl -na -F"\t" -MPath::Tiny -e '
+        path(qq{subgroup/$F[0].lst})->append(qq{$F[1]});
+    '
+
+# ignore small subgroups 删掉了 一个簇中少于5个枝的簇，放在lonely.lst中
+find subgroup -name "*.lst" | sort |
+    parallel -j 1 -k '
+        lines=$(cat {} | wc -l)
+
+        if (( lines < 5 )); then  #(( ... ))可以执行算数相当于[[]]
+            echo -e "{}\t$lines"
+            cat {} >> subgroup/lonely.lst
+            rm {}
+        fi
+    '
+# append ccs 将重复的序列也保存subgroup中
+cat ../nr/connected_components.tsv |
+    parallel -j 1 --colsep "\t" '#-colsep把行切分成列
+        file=$(rg -F -l  "{1}" subgroup)
+        echo {} | tr "[:blank:]" "\n" >> ${file}
+    '
+# rg: 递归地在当前目录中搜索匹配模式的行，比grep更高级
+# -F/--fixed-strings：将模式视为文字字符串而不是正则表达式
+# -l/--file-with-matches: 打印至少有一个匹配的路径并抑制匹配内容
+# tr: 将标准输入复制到标准输出，替换或删除所选字符
+# "[:blank:]": 所有水平空格 - POSIX 基本正则表达式
+
+# remove duplicates 因为上一步将所有相关序列名称都放入${file}会有重复，下一步去重
+find subgroup -name "*.lst" | sort |
+    parallel -j 1 '
+        cat {} | sort | uniq > tmp.lst #uniq 可检查文本文件中重复出现的行列
+        mv tmp.lst {} #将去重的文件覆盖原来的
+    '
+
+wc -l subgroup/* |
+    sort -nr |
+    head -n 100
+ 47162 total
+ 23113 subgroup/lonely.lst
+   486 subgroup/00_432.lst
+   420 subgroup/00_1401.lst
+   377 subgroup/00_514.lst
+···
+    47 subgroup/00_1201.lst
+    46 subgroup/13_2.lst
+    46 subgroup/10_8.lst
+    46 subgroup/00_825.lst
+    46 subgroup/00_666.lst
+    45 subgroup/00_9.lst
+    
+# 根据制表符分隔的文件的第一个字段的值，筛选出值小于等于10的行
+wc -l subgroup/* |
+    perl -pe 's/^\s+//' |#-P 假设像-n一样的循环，但也打印行，像sed；替换：s///，^匹配字符开头的字符，\s+和 [\n\t\r\f]+ 一样
+    tsv-filter -d" " --le 1:10 |#-d 分隔符
+    wc -l
+419
+
+#，对子目录中的文件进行处理，统计行数后删除前导空格，然后筛选出第一个字段大于等于50的行，并且第二个字段以2开头并且后面跟着一个或多个数字的行，最后按照数字逆序排序，并将结果保存在next.tsv文件中
+wc -l subgroup/* |
+    perl -pe 's/^\s+//' |
+    tsv-filter -d" " --ge 1:50 |#ge 数字，即筛选大于等于50的簇
+    tsv-filter -d " " --regex '2:\d+' |#regex，与正则表达式相符。--regex '2:\d+'，筛选出第二个字段的值满足正则表达式2:\d+的行，即第二个字段以2开头并且后面跟着一个或多个数字
+    sort -nr \
+    > next.tsv
+
+wc -l next.tsv
+84
+
+# rm -fr job
+```
+## Plasmid: prepare
+- Split sequences
+```
+mkdir /mnt/c/shengxin/data/plasmid/GENOMES
+mkdir /mnt/c/shengxin/data/plasmid/taxon #taxon 分类单元
+
+cd /mnt/c/shengxin/data/plasmid/grouping
+
+# 给文件内容加标题
+echo -e "#Serial\tGroup\tCount\tTarget" > ../taxon/group_target.tsv #\t制表符分隔
+
+cat next.tsv |
+    cut -d" " -f 2 |# 分隔符为空格，只打印指定的第二行，得到*.lst文件
+    # 下面分别打开每一个.lst文件，得到
+    # NC_002122.1
+    # NC_019083.1
+    # NC_006671.1
+    # NC_008612.1
+
+    parallel -j 4 -k --line-buffer '
+        echo >&2 "==> {}"
+
+        GROUP_NAME={/.}  
+        #等于subgroup/00_27.lst去掉目录和后缀，即00_27
+        TARGET_NAME=$(head -n 1 {} | perl -pe "s/\.\d+//g")   # 去掉NC_002122.1的.后面的数字
+
+        SERIAL={#}
+        COUNT=$(cat {} | wc -l)
+
+        echo -e "${SERIAL}\t${GROUP_NAME}\t${COUNT}\t${TARGET_NAME}" >> ../taxon/group_target.tsv
+        
+        #将每个lst中储存的序列提取出来，
+        faops order ../nr/refseq.fa {} stdout |# order重排序
+            faops filter -s stdin stdout \  #-s 简化序列名称
+            > ../GENOMES/${GROUP_NAME}.fa  #每一个成簇的序列放在一个文件中，文件名为00_27.fa
+    '
+
+# taxon文件夹中储存着每一个簇的每个序列的大小
+cat next.tsv |
+    cut -d" " -f 2 |
+    parallel -j 4 -k --line-buffer '
+        echo >&2 "==> {}"
+        GROUP_NAME={/.}
+        faops size ../GENOMES/${GROUP_NAME}.fa > ../taxon/${GROUP_NAME}.sizes
+    '
+# 使用 RepeatMasker 软件对 GENOMES 目录下的所有 .fa 文件进行屏蔽重复序列分析的命令
+# Optional: RepeatMasker #RepeatMasker 用于识别和屏蔽基因组中的重复元素和转座子。它可以帮助研究人员在基因组分析中减少干扰和噪音，从而更好地理解基因组的结构和功能。
+#egaz repeatmasker -p 16 ../GENOMES/*.fa -o ../GENOMES/
+
+# split-name   命令faops split-name 可以按序列名称对序列文件进行切割. 
+find ../GENOMES -maxdepth 1 -type f -name "*.fa" | sort |
+    parallel -j 4 '
+        faops split-name {} {.}  # 输出文件夹名称去掉.fa，即00_27
+    '
+
+# 给每个单独的序列建文件夹
+# mv to dir of basename
+find ../GENOMES -maxdepth 2 -mindepth 2 -type f -name "*.fa" | sort |
+    parallel -j 4 '
+        mkdir -p {.}#使用文件路径创建一个同名的目录
+        mv {} {.} #将找到的文件移动到相应的目录中
+    '
+
+```
+- prepseq
+``` 
+cd /mnt/c/shengxin/data/plasmid
+cat taxon/group_target.tsv |
+    sed -e '1d' | #删除第一行
+    parallel --colsep '\t' --no-run-if-empty --linebuffer -k -j 4 ' #-colsep把行切分成列
+        echo -e "==> Group: [{2}]\tTarget: [{4}]\n"
+
+        for name in $(cat taxon/{2}.sizes | cut -f 1); 
+        do #cat taxon/00_27.sizes 是每一个簇中具体的每个序列+序列碱基数 | 只提取序列名称NC_001496等 
+            egaz prepseq GENOMES/{2}/${name} 
+             #GENOMES/00_27/NC_001496
+        done
+    '
+#prepseq: preparing steps for lastz#lastz对两条DNA序列进行比对
+```
+- Check outliers of lengths 检查长度的异常值
+```
+cd /mnt/c/shengxin/data/plasmid
+cat taxon/*.sizes | cut -f 1 | wc -l
+8214
+
+#用于计算taxon 目录下多个文件中的第二个字段的数值的总和
+cat taxon/*.sizes | cut -f 2 | paste -sd+ | bc
+#paste 指令会把每个文件以列对列的方式，一列列地加以合并；-d<间隔字，用指定的间隔字符取代跳格字符。-s或--serial 　串列进行而非平行处理；paste -sd+：将切割后的每行数字使用加号连接起来。
+#bc：通过 bc 命令执行基本计算，类似于计算器
+922851803
+
+cat taxon/*.sizes | cut -f 2 | paste -sd+ | head -n 5
+48125+300837+333311+340708+284751+270906+259080+255232+283930+398857+311749+306131+256887+201182+268263+355358+327867+206931+369925+283349+248123···
+
+#在 taxon 目录下筛选出小于等于较低限制值的行，并将筛选后的结果保存回原始文件中
+cat taxon/group_target.tsv |
+    sed -e '1d' |
+    parallel --colsep '\t' --no-run-if-empty --linebuffer -k -j 4 ' #-k 用于保持输出的顺序
+        echo -e "==> Group: [{2}]\tTarget: [{4}]"
+
+        median=$(cat taxon/{2}.sizes | datamash median 2)  #计算当前组文件 {2}.sizes 中第2列的中位数；atamash 作为一个命令行程序可以对文本文件进行数字和文本相关的基本统计操作
+        mad=$(cat taxon/{2}.sizes | datamash mad 2) #mad绝对偏差中位数；计算当前组文件 {2}.sizes 中第2列的MAD
+        lower_limit=$( bc <<< " (${median} - 2 * ${mad}) / 2" )  #低限度值
+
+#        echo $median $mad $lower_limit
+        lines=$(tsv-filter taxon/{2}.sizes --le "2:${lower_limit}" | wc -l)  #筛选出序列长度小于等于低限度值的行，计算序列数目
+
+        if (( lines > 0 )); then
+            echo >&2 "    $lines lines to be filtered"
+            tsv-join taxon/{2}.sizes -e -f <(
+
+            #--e|exclude - Exclude matching records.
+            #--f|filter-file FILE - (Required) File with records to use as a filter.
+
+                    tsv-filter taxon/{2}.sizes --le "2:${lower_limit}"
+                ) \
+                > taxon/{2}.filtered.sizes
+            mv taxon/{2}.filtered.sizes taxon/{2}.sizes#将过滤完的序列覆盖原有序列
+        fi
+    '
+cat taxon/*.sizes | cut -f 1 | wc -l
+6600
+cat taxon/*.sizes | cut -f 2 | paste -sd+ | bc
+921980223
+
+Rsync to hpcc
+rsync -avP \
+    ~/data/plasmid/ \
+    wangq@202.119.37.251:data/plasmid
+该命令将本地计算机上 ~/data/plasmid/ 目录下的文件同步到 HPCC 的 wangq@202.119.37.251:data/plasmid 目录中
+
+# rsync -avP wangq@202.119.37.251:data/plasmid/ ~/data/plasmid
+该命令将 HPCC 上的 wangq@202.119.37.251:data/plasmid 目录下的文件同步到本地计算机的 ~/data/plasmid/ 目录中
+```
+- Plasmid: run
+```
+cd /mnt/c/shengxin/data/plasmid
+#根据 taxon/group_target.tsv 中的每一行，生成模板文件并将其中的两个任务提交给 MPI 队列执行
+cat taxon/group_target.tsv |
+    sed -e '1d' | grep "^53" |#通过 grep 命令筛选出以 53 开头的行
+    parallel --colsep '\t' --no-run-if-empty --linebuffer -k -j 1 '
+        echo -e "==> Group: [{2}]\tTarget: [{4}]\n"
+
+# 根据给定的路径模板和一组输入文件的路径，生成相应的模板文件，并将输出文件保存在 groups/{2}/ 目录中
+        egaz template \
+            GENOMES/{2}/{4} \#指定一个路径模板，其中 {2} 和 {4} 分别是变量，代表 taxon/group_target.tsv 文件中的第二列和第四列的值。这个路径模板将用于生成输入文件的路径
+            $(cat taxon/{2}.sizes | cut -f 1 | grep -v -x "{4}" | xargs -I[] echo "GENOMES/{2}/[]") \
+            #grep -v：反向查找，只打印不匹配的行；x 只显示全列符合的列；grep -v -x "{4}" 筛选出不等于 {4} 的值
+            --multi -o groups/{2}/ \#指定输出目录为 groups/{2}/，并使用 --multi 参数表示生成多个输出文件
+            --order \#保持输入文件的顺序
+            --parallel 24 -v #最大并行任务数为 24；-v：输出详细的运行日志信息
+
+#        bash groups/{2}/1_pair.sh
+#        bash groups/{2}/3_multi.sh
+
+        bsub -q mpi -n 24 -J "{2}-1_pair" "bash groups/{2}/1_pair.sh"#使用 bsub 命令将 bash groups/{2}/1_pair.sh 提交给 MPI 队列执行，MPI是一套通信标准
+#egaz 后端简单的基因组比对；template:用于创建bash执行文件
+#bsub，提交给lsf作业的命令。-q 选择队列；-q mpi：指定队列为 MPI 队列，表示提交给 MPI 并行计算集群来执行任务；-n 24 指定使用的进程数为 24；-J 作业的名字
+#LSF（Load Sharing Facility）是IBM旗下的一款分布式集群管理系统软件，负责计算资源的管理和批处理作业的调度
+
+#将 bash groups/{2}/3_multi.sh 脚本提交给 MPI 队列，等待依赖任务 {2}-1_pair 结束后执行，并使用 24 个并行处理器执行任务
+#-w  提交作业前，指定操作。即等待任务 {2}-1_pair 结束后再提交当前任务
+        bsub -w "ended({2}-1_pair)" \
+            -q mpi -n 24 -J "{2}-3_multi" "bash groups/{2}/3_multi.sh"
+    '
+#找到满足条件的文件夹并并行地删除它们
+find groups -mindepth 1 -maxdepth 3 -type d -name "*_raw" | parallel -r rm -fr
+#至少深度为 1，即排除当前目录本身；最大深度为 3，即只搜索当前目录下的子目录和孙目录
+#type d：类型为文件夹。使用 parallel 命令并行执行删除操作。-r 参数表示保持输入顺序
+
+#find基本上相当于 linux下的 “搜索” , 相当于windows下的搜功能，它是用来搜索文件的
+#grep(global regular expression) 命令用于查找文件里符合条件的字符串或正则表达式
+
+find groups -mindepth 1 -maxdepth 3 -type d -name "*_fasta" | parallel -r rm -fr
+find . -mindepth 1 -maxdepth 3 -type f -name "output.*" | parallel -r rm
+
+#输出两个数字
+echo \
+    $(find groups -mindepth 1 -maxdepth 1 -type d | wc -l) \
+    $(find groups -mindepth 1 -maxdepth 3 -type f -name "*.nwk.pdf" | wc -l)
+    1 0
+
+```
 
 
 
