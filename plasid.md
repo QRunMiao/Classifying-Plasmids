@@ -5,22 +5,43 @@ mkdir -p data/plasmid
 cd data/plasmid
 rsync -avP ftp.ncbi.nlm.nih.gov::refseq/release/plasmid/ RefSeq/
 
-rsync用于文件同步.它可以在本地计算机与远程计算机之间，或者两个本地目录之间同步文件（但不支持两台远程计算机之间的同步）。它也可以当作文件复制工具，替代cp和mv命令
--a --archive ：归档模式，表示递归传输并保持文件属性。等同于"-rtopgDl"
+#rsync用于文件同步.它可以在本地计算机与远程计算机之间，或者两个本地目录之间同步文件（但不支持两台远程计算机之间的同步）。它也可以当作文件复制工具，替代cp和mv命令。rsync中的r代表remote，"远程同步"（remote sync）
+-a --archive ：归档模式，表示递归传输并保持文件属性。
 -v：显示rsync过程中详细信息。可以使用"-vvvv"获取更详细信息。
 -P：显示文件传输的进度信息。(实际上"-P"="–partial --progress"，其中的"–progress"才是显示进度信息的)
 
-递归（recursion）的定义： 简单说程序调用自身的编程技巧叫递归。递归的思想是把一个大型复杂问题层层转化为一个与原问题规模更小的问题，问题被拆解成子问题后，递归调用继续进行，直到子问题无需进一步递归就可以解决的地步为止。 
+递归（recursion）的定义： 简单说程序调用自身的编程技巧叫递归。递归的思想是把一个大型复杂问题层层转化为一个与原问题规模更小的问题，问题被拆解成子问题后，递归调用继续进行，直到子问题无需进一步递归就可以解决的地步为止。
+
+#ftp 代表 File Transfer Protocol 文件传输协议。用于通过 TCP/IP（传输控制协议/Internet 协议）网络在计算机之间传输文件。
+ncbi-National Center for Biotechnology Information，美国国家生物技术信息中心
+nlm 和 nih 是指相关的组织和机构：nlm 代表美国国家医学图书馆（National Library of Medicine），它是一个位于美国的重要医学信息机构，提供广泛的生物医学文献和数据库资源。NCBI （National Center for Biotechnology Information）是 NLM 的一个重要部门，负责管理和提供许多与生物技术和基因组学相关的数据库和工具。
+nih 代表美国国立卫生研究院（National Institutes of Health），是美国最大的生物医学研究机构之一。NLM 是 NIH 的一个分支机构，负责收集、保存和提供医学和健康科学领域的文献和数据资源。
+
+:: 则是 FTP 客户端中用于指定主机和路径的分隔符。
+#ftp.ncbi.nlm.nih.gov 是一个公共的 FTP 服务器，提供了来自 NCBI（National Center for Biotechnology Information）的各种生物信息学数据和资源。refseq/release/plasmid/是要下载的文件路径。RefSeq/：目标地址，指定文件下载到本地的目标目录
 ```
 2. 处理gbff文件：注释文件
 ```
 gzip -dcf RefSeq/*.genomic.gbff.gz > genomic.gbff
 
+gzip 压缩或解压缩。命令只能用来压缩文件，不能压缩目录
 -d或--decompress或----uncompress 　解开压缩文件
--c或--stdout或--to-stdout 　把压缩后的文件输出到标准输出设备，不去更动原始文件
--f或--force 　强行压缩文件。不理会文件名称或硬连接是否存在以及该文件是否为符号连接
+-c或--stdout或--to-stdout 　把压缩后的文件输出到标准输出设备，保持源文件
+-f或--force 　强行解压缩文件。即使存在同名文件也会覆盖
+>：重定向操作符，用于将标准输出（解压缩后的内容）重定向到文件中
 
-gbff是NCBI基因组数据库常见的基因组genebank格式文件，在实际分析中，常常需要gff格式或者gtf格式，所以就存在gbff转换gff格式的需求
+gbff是NCBI基因组数据库常见的基因组genbank格式文件，在实际分析中，常常需要gff格式或者gtf格式，所以就存在gbff转换gff格式的需求
+#gff/gtf是贮存这些注释信息的两种文件格式。 GFF (general feature format)：这种格式主要是用来注释基因组。 现大部分利用的是第三版，即gff3。 GTF (gene transfer format)：主要是用来对基因进行注释。当前所广泛使用的gtf格式为第二版，即gtf2
+
+#RefSeq（Reference Sequence）和GenBank是两个与生物序列相关的数据库。
+
+RefSeq = The NCBI Reference Sequence
+这个计划是由NCBI提出的，意图是为所有常见生物提供非冗余，人工选择过的参考序列。一个物种的RefSeq注释通常包含：参考基因组，参考转录组，参考蛋白序列，参考SNP信息，参考CNV（拷贝数变异）信息等等。
+
+GenBank是一个公共的DNA和RNA序列数据库，也由NCBI维护。它收集和存储了来自全球各地的基因组、转录本和蛋白质序列数据，并为这些序列提供注释和相关信息。GenBank中的序列来自于科学研究、文献发表和其他来源。GenBank中的序列可以被科研人员免费访问和使用。genbank的数据可能重复或者不准。
+
+总之，RefSeq和GenBank都是由NCBI提供的对基因组、转录本和蛋白质序列进行存储、标准化和注释的数据库
+
 ```
 进程
 
@@ -95,7 +116,9 @@ sent 658 bytes  received 4,500,522,600 bytes  744,441.86 bytes/sec
 total size is 4,499,421,847  speedup is 1.00
 ```
 
-csv 是逗号分隔值的意思。csv 文件是一个存储表格和电子表格信息的纯文本文件，其内容通常是一个文本、数字或日期的表格
+CSV（Comma-Separated Values，逗号分隔的值）。csv 文件是一个存储表格和电子表格信息的纯文本文件，其内容通常是一个文本、数字或日期的表格
+
+· csv 与excel相比，只是一个文本格式，可以储存数据，但是不包括格式、公式等
 
 运行perl
 ```
@@ -107,10 +130,25 @@ perl: warning: Please check that your locale settings:
     are supported and installed on your system.
 perl: warning: Falling back to the standard locale ("C").
 解决方案
-export LANGUAGE=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LC_CTYPE=en_US.UTF-8
+#用于设置系统的语言环境变量的命令
+export LANGUAGE=en_US.UTF-8# LANGUAGE 是一个系统环境变量，它定义了系统所使用的默认语言环境。en_US.UTF-8 表示英语（美国）以 UTF-8 编码。“en” 表示使用英语作为语言，“en” 表示使用英语作为语言“en” 表示使用英语作为语言，US 表示美国作为地区设置
+"UTF" 是 "Unicode Transformation Format" 的缩写,UTF-8 最少需要8个比特位也就是一个字节来存储.Unicode 是国际标准字符集，它将世界各种语言的每个字符定义一个唯一的编码，以满足跨语言、跨平台的文本信息转换
+#执行这个命令后，系统的语言环境将被设置为英语（美国），并且支持使用 UTF-8 编码。这意味着在接下来的操作中，系统会以英语（美国）的语言进行显示和处理文本数据。
+
+export LC_ALL=en_US.UTF-8#LC_ALL环境变量用于覆盖所有其他语言相关的环境变量，包括LC_COLLATE、LC_CTYPE、LC_MESSAGES等。
+LC_COLLATE：该环境变量用于指定字符串比较和排序规则的设置。它决定了在进行字符串比较、排序等操作时所使用的规则，例如字母顺序、大小写敏感性等。
+LC_CTYPE：该环境变量用于指定字符分类和转换规则的设置。它影响字符的识别、分割、转换等操作，例如字母、数字、标点符号的定义，以及字符编码、大小写转换规则等。
+LC_MESSAGES：该环境变量用于指定消息和文本显示的设置。它控制程序的输出信息、错误提示、帮助文档等的语言和格式。
+
+export LANG=en_US.UTF-8#LANG环境变量用于指定默认的区域设置和字符编码。
+
+export LC_CTYPE=en_US.UTF-8#LC_CTYPE环境变量用于指定字符分类和转换规则的设置。
+# export：用于设置环境变量
+
+#LANGUAGE 主要用于特定程序库和工具的语言选择，而 LANG 则是整个系统的默认语言环境设置，包括日期时间格式、数字格式、错误提示信息、程序界面显示等。
+LANGUAGE 可以指定多个语言编码，并按优先级排列，而 LANG 只能指定一个语言环境。
+当使用 LANGUAGE 时，系统会根据优先级选择可用的语言进行本地化；而使用 LANG 时，系统会直接将其作为默认的语言环境。
+
 ```
 ```
 perl ~/Scripts/withncbi/taxon/gb_taxon_locus.pl genomic.gbff > refseq_id_seq.csv
@@ -127,13 +165,19 @@ perl gb_taxon_locus.pl genomic.gbff > refseq_id_seq.csv
 for i in $(ls RefSeq/*.genomic.gbff.gz)
 > do
 > gzip -dcf ${i} > genomic.gbff
-> perl gb_taxon_locus.pl genomic.gbff >> refseq_id_seq.csv
+> perl gb_taxon_locus.pl genomic.gbff >> refseq_id_seq.csv#perl脚本用于提取序列的分类信息和基因位点信息
 > rm genomic.gbff
 > done
 
 >>重定向，不会覆盖原文件，>会覆盖原文件，可以用来向文件中追加内容
+
+for语句格式：
+for 变量名 in 列表
+do
+    执行的操作
+done
+
 ```
-· csv 是逗号分隔值的意思，与excel相比，只是一个文本格式，可以储存数据，但是不包括格式、公式等
 
 refseq_id_seq.csv 内容：
 ```
@@ -153,10 +197,12 @@ refseq_id_seq.csv 内容：
 445983	NZ_ABCV02000013
 205919	NZ_AAEQ01000061
 ```
+
+
 3. genomic.fna 文件: FNA 文件是FASTA格式 DNA和蛋白质序列比对文件，其存储可被分子生物学软件使用的DNA信息
 ```
 gzip -dcf RefSeq/plasmid.1.1.genomic.fna.gz |
-> grep "^>" |
+> grep "^>" |#^ 是一个正则表达式元字符，它用于匹配文本的开头位置
 > head -n 5
 
 >NZ_PYUR01000034.1 Salmonella enterica subsp. enterica serovar Typhimurium strain OLF-FSR1-ST-44 plasmid unnamed1 40, whole genome shotgun sequence
@@ -167,8 +213,7 @@ gzip -dcf RefSeq/plasmid.1.1.genomic.fna.gz |
 ```
 ```
 faops n50
-
-faops n50 - compute N50 and other statistics.
+计算N50及其他一些统计值，N50类似于长度的平均值或中值，但对于较长的contig具有更重要的意义。
 usage:
     faops n50 [options] <in.fa> [more_files.fa]
 
@@ -185,9 +230,24 @@ gzip -dcf RefSeq/*.genomic.fna.gz > RefSeq/plasmid.fa
 ```
 
 **MinHash to get non-redundant plasmids**
+
+要使用 MinHash 获取非冗余质粒（plasmids）的方法通常包括以下步骤：
+
+1.数据预处理：准备一组质粒序列数据，可以是以 FASTA 或其他格式存储的 DNA 序列文件。
+
+2.MinHash 哈希函数：选择适当的 MinHash 哈希函数，通常是随机生成的。这些哈希函数能够将输入的质粒序列映射到一个固定大小的哈希签名（signature）。
+
+3.建立哈希签名集合：对每个质粒序列应用 MinHash 哈希函数，并将生成的哈希签名收集到一个集合中。
+
+4.计算相似度：将每对质粒的哈希签名进行比较，计算它们之间的相似度。常用的计算方法是 Jaccard 相似度，它衡量两个集合的交集与并集之间的比例。
+
+5.阈值筛选：设置一个相似度阈值，根据该阈值确定哪些质粒被认为是冗余的。如果两个质粒的相似度超过阈值，则它们可能是冗余的。
+
+6.非冗余质粒选择：根据相似度阈值筛选的结果，选择一组非冗余的质粒。
+
 Hash，一般翻译做散列、杂凑，是把任意长度的输入（又叫做预映射pre-image）通过散列算法变换成固定长度的输出，该输出就是散列值。简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要的函数。
 
-MinHash,是用于快速检测两个集合的相似性的方法。基于Jaccard相似性度量。对于两个集合X与Y，Jaccard相似性系数可以定义为：
+MinHash (最小哈希) 是一种用于计算相似性和识别重复项的技术.基于Jaccard相似性度量。对于两个集合X与Y，Jaccard相似性系数可以定义为：
 Jaccard=X∩Y/X∪Y
 该系数是0-1之间的值。当两个集合越接近，那么该值越接近1；反之，更接近0。
 
@@ -202,7 +262,7 @@ faops size ../RefSeq/plasmid.fa > refseq.sizes
 #筛选出refseq.sizes文件里面序列长度小于等于2000的序列，并输出行数，2:2000中的2指的是第二列
 #tsv-filter命令 用于处理以制表符分隔的文件（TSV格式） 具体用法见https://github.com/eBay/tsv-utils/blob/master/docs/tool_reference/tsv-filter.md
 
-tsv-filter refseq.sizes --le 2:2000 | wc -l
+tsv-filter refseq.sizes --le 2:2000 | wc -l#--le 选项
 
 9477
 ```
@@ -221,9 +281,8 @@ tsv-filter refseq.sizes --le 2:2000 | wc -l
 -le(less equal) 小于或等于
 
 ```
-# some根据列表提取特定序列，<表示输入重定向，把长度大于2000的序列提取到refseq.fa文件中
-
-#筛选并得到序列长度大于2000的序列，提取到refseq.fa文件中
+# some根据列表提取特定序列，<表示输入重定向
+#从 "../RefSeq/plasmid.fa" 文件中提取符合 "refseq.sizes" 文件中第二列中值大于2000的行的序列，并将结果存储到 "refseq.fa" 文件中。
 faops some ../RefSeq/plasmid.fa <(tsv-filter refseq.sizes --gt 2:2000) refseq.fa
 
 # 将reads打断成更小的k-mers
@@ -234,9 +293,9 @@ mash的两个基本功能：sketch 功能将序列转化为哈希结构图。 di
  [mash sketch用法](https://www.venea.net/man/mash-sketch(1)) 
 # K-mer是指将reads迭代分成包含K个碱基的序列，一般长短为L的reads可以分成L-K+1个k-mers。K-mer可以用于基因组从头组装前的基因组调查，评估基因组的大小。
 # -k 21: K-mer 大小为21；k-mers是包含在生物序列中的长度为k的子序列, -k 21:序列中的长度为21的子序列
-# -s 1000 每个sketch草图最多有1000个非冗余最小哈希； 
+# -s 1000: 这个参数指定了每个参考序列中提取的最大 k-mer 样本数为 1000。 
 # -i 绘制单个序列而不是整个文件，即k-mer打断的时候以序列为单位，而不是把整个文件混在一起打断；
-# -p 8 多线程处理;-o 设置名称前缀；# -: read from standard input
+# -p 8 多线程处理;-o 设置名称前缀；# -: 这个短横线表示将前一个命令的输出作为输入。
 
 cat refseq.fa |
     mash sketch -k 21 -s 1000 -i -p 8 - -o refseq.plasmid.k21s1000.msh
@@ -265,18 +324,19 @@ ls
 # 将原本大的总dna分成小文件排序并且分别划分成21-kmers
 find job -maxdepth 1 -type f -name "[0-9]??" | sort |
     parallel -j 4 --line-buffer '
-        echo >&2 "==> {}"
+        echo >&2 "==> {}"#打印当前处理的文件名，{}  是 parallel 命令的占位符，表示从管道获取的文件名；==> 是一个字符串，用于在标准错误流中打印一条消息
         faops some refseq.fa {} stdout |
             mash sketch -k 21 -s 1000 -i -p 6 - -o {}.msh
     '
 #--max-depth=n表示只深入到第n层目录，-maxdepth 1 查找当前目录，-maxdepth 1 查找当前目录；find 命令会搜索常规文件，但最好进行指定（-type f）以使所有内容更清晰；-name "[0-9]??"：查找以0-9数字开头的文件
 #sort：排序。将文件的每一行作为一个单位，相互比较，比较原则是从首字符向后，依次按ASCII码值进行比较，最后将他们按升序输出。
-#line-buffer：Windows输出过程是处理完一部分一次性输出一大段，该语句使得处理了一部分就输出一点，运行过程一直有序输出
+#line-buffer：Windows输出过程是处理完一部分一次性输出一大段，这个语句表示每行输出都会立即刷新缓冲区，保证实时显示输出
 #>&2，&是文件描述符，&2 表示错误通道2，>&2 表示hello 重定向输出到错误通道2，即终端屏幕上显示。0（stdin，标准输入）、1（stdout，标准输出）、2（stderr，标准错误输出）
 #some按照提供的序列名列表提取指定的序列
+#{} stdout中的{}表示一个占位符，用于表示通过管道传递给该命令的文件名。每次执行命令时，{}将被实际的文件名所替代。
 
 
-# 看两基因组之间的距离,相当于所有的质粒序列两两相互比对
+# 每个文件都与 refseq.plasmid.k21s1000.msh 进行 Mash 距离计算
 #当Jaccard指数在大于0< j ≤1时，j 越大也即二者相近kmer越多，最终得到的mash距离越小，两个基因组越相近
 #Mash distance(D)，取值0-1，越小两个基因组序列越相近，越大则二者越远
 
@@ -295,8 +355,8 @@ mash dist -p 6 026.msh ../refseq.plasmid.k21s1000.msh > 026.tsv
 find job -maxdepth 1 -type f -name "[0-9]??" | sort |
     parallel -j 16 '
         cat {}.tsv |
-            tsv-filter --ff-str-ne 1:2 --le 3:0.01
-    ' \
+            tsv-filter --ff-str-ne 1:2 --le 3:0.01# --ff-str-ne 1:2,表示筛选出第一列与第二列不相等的行
+    ' \#\ 表示当前命令未结束；使用 \ 可以将一条命令分成多行书写，提高代码可读性并方便长命令的编写。
     > redundant.tsv
 
 cat redundant.tsv | head -n 10 
@@ -314,33 +374,38 @@ NZ_SIOD01000006.1       NZ_SIQB01000006.1       0.00105797      0       957/1000
 cat redundant.tsv | wc -l
 1804171
 
+
+#读取 redundant.tsv 文件，构建一个无向图，并找到其中的连通分量。然后，将每个连通分量中的元素按字母顺序排序，并将结果存储在 connected_components.tsv 文件中。
+
 . join()：将序列（也就是字符串、元组、列表、字典）中的元素以指定的字符连接生成一个新的字符串。
 \t ：表示空4个字符，类似于文档中的缩进功能，相当于按一个Tab键。\n ：表示换行
-#-M 引用模;-n 循环,一行一行来处理文件;-l 参数表示自动去除行尾的换行符;-a 参数表示按照指定分隔符（\t）将每行数据分割成数组 @F(缺省参数,是在声明函数的某个参数的时候为之指定一个默认值，在调用该函数的时候如果采用该默认值，你就无须指定该参数)；-F 修改分离符;-e 一行程序
+#-M 引用模块 Graph::Undirected;-n 循环,一行一行来处理文件;-l：自动添加或去除行尾的换行符;-a 参数表示按照指定分隔符（此处为\t）将每行数据分割成数组 @F；-F 修改分离符;-F"\t"：指定分隔符为制表符 \t；-e '...'：指定要运行的 Perl 代码
+#在Perl中，@F 是一个特殊数组变量，它存储了通过指定的分隔符 -F 分割当前行后得到的字段。每个字段将作为 @F 数组的一个元素。如果一行内容为 "A\tB\tC"，那么 @F 数组的元素将是 ("A", "B", "C")。
 #Graph::Undirected模代表无向图，可以将三至更多的最短关系计算出来
 #qq{ }	为字符串添加双引号
 g	替换所有匹配的字符串
 #->	箭号用于指定一个类的方法
 cat redundant1.tsv |
     perl -nla -F"\t" -MGraph::Undirected -e ' 
-#创建了一个名为 $g 的无向图对象  
+#创建了一个名为 $g 的无向图对象，并将其初始化为一个新的无向图对象 
             BEGIN {
             our $g = Graph::Undirected->new;
-        }
+        }#our 关键字用于声明全局变量
 
-        $g->add_edge($F[0], $F[1]); #对于每一行输入数据，将第一列和第二列作为顶点，使用 $g->add_edge() 方法将它们添加到图中
+        $g->add_edge($F[0], $F[1]); #$F[0] 和 $F[1] 分别表示 @F 数组的第一个和第二个元素，即当前行的前两个字段。这些字段将用于构建无向图的边。add_edge 是 Graph::Undirected 模块中的一个方法，用于向无向图中添加一条边。
 
         END {
-            for my $cc ( $g->connected_components ) {
+            for my $cc ( $g->connected_components )#遍历无向图中的连通分量。连通分量是图论中的一个概念，指的是无向图中一些节点的集合，其中任意两个节点都可以通过路径相互连接。换句话说，这些节点在图中是相互连通的。
+             {
                 print join qq{\t}, sort @{$cc}; 
-            }#使用 $g->connected_components 获取图中的连通分量
+            }#按制表符 \t 连接并按字母顺序排序当前连通分量的元素，并输出至标准输出
         }
     ' \
     > connected_components.tsv
 
-#将每一个相似质粒序列依次列出来
+#按制表符拆分输入文件的每一行，并将每个元素打印到新的一行，写入输出文件
 cat connected_components.tsv |
-    perl -nla -F"\t" -e 'printf qq{%s\n}, $_ for @F' \
+    perl -nla -F"\t" -e 'printf qq{%s\n}, $_ for @F' \#$_ 特殊变量，代表当前正在处理的元素或值；$_ for @F是指@F 中的每个元素 $_
     > components.list
   #%s 输出字符串
 
@@ -353,7 +418,7 @@ wc -l connected_components.tsv components.list
 faops some -i refseq.fa components.list stdout > refseq.nr.fa #-i 提取的是list中不含有的序列
 faops some refseq.fa <(cut -f 1 connected_components.tsv) stdout >> refseq.nr.fa #再把redundant的序列集中挑第一个再补充加进去
 
-#rm -rf 删除当前目录下的所有文件及目录，并且是直接删除，无需逐一确认命令行为
+#rm -rf 删除当前目录下的所有文件及目录，并且是直接删除，无需逐一确认命令行为；-f, --force 忽略不存在的文件，从不给出提示。r,--recursive 指示rm将参数中列出的全部目录和子目录均递归地删除。
 rm -fr job
 
 #统计现在序列行数
@@ -412,7 +477,7 @@ NZ_JAJQQO010000008.1    NZ_LJCD01000031.1       0.0228571       0       448/1000
 cat connected.tsv | wc -l
 344446
 
-mkdir -p group
+mkdir -p group#-p 确保目录名称存在，不存在的就建一个
 cat connected.tsv |
     perl -nla -F"\t" -MGraph::Undirected -MPath::Tiny -e '
     #Path::Tiny 文件路径实用程序；-e 参数后面跟着实际的 Perl 代码
@@ -420,12 +485,12 @@ cat connected.tsv |
             our $g = Graph::Undirected->new;
         }
 
-        $g->add_edge($F[0], $F[1]);  #边界设定为比较的两个序列
-#定义了空数组 @rare，用于存放稀缺的顶点；定义了一个变量 $serial，用于给每个组分配唯一的序号
+        $g->add_edge($F[0], $F[1]);  #\t 进行拆分，并将拆分后的第一个字段和第二个字段作为顶点，添加边到图中
+
         END {
-            my @rare;
-            my $serial = 1;
-            my @ccs = $g->connected_components;
+            my @rare;#定义一个数组 @rare，用于存储连接组件中节点数量小于 50 的节点
+            my $serial = 1;#定义一个变量 $serial，用于计数，作为输出文件的序号。
+            my @ccs = $g->connected_components;#将$g 进行连通分量的划分，并将结果存储在数组 @ccs 中。
             @ccs = map { $_->[0] }  
             #如果返回值存储在list中，map()函数返回数组
             # @ccs中储存了对比的第一个序列的名称
@@ -441,7 +506,7 @@ cat connected.tsv |
                 }
                 else {
                     path(qq{group/$serial.lst})->spew(map {qq{$_\n}} @{$cc});
-                    $serial++;  #连通分量数组 @ccs。首先，计算连通分量内的顶点数量。如果数量小于 50，则将这些顶点添加到 @rare 数组中。否则，将这些顶点存储到以 $serial 命名的文件中，并递增 $serial 的值
+                    $serial++;  #首先，计算连通分量内的顶点数量。如果数量小于 50，则将这些顶点添加到 @rare 数组中。否则，将这些顶点存储到以 $serial 命名的文件中，并递增 $serial 的值
                 }
             }
             path(qq{group/00.lst})->spew(map {qq{$_\n}} @rare);
@@ -456,7 +521,7 @@ cat connected.tsv |
 # elsif($a>$b){return 1;}      
 # ‘->’符号是“插入式解引用操作符”（infix dereference operator）。 换句话说，它是调用由引用传递参数的子程序的方法。
 #map函数：map EXPR LIST，对list中的每个元素执行EXPR或BLOCK，返回新的list。对每一此迭代，$_中保存了当前迭代的元素的值。
-$_(下划线) 表示的是打印上一个输入参数行，当这个命令在开头时，打印输出文档的绝对路径名
+
 
 # get non-grouped
 # this will no be divided to subgroups
