@@ -258,7 +258,7 @@ cd /mnt/c/shengxin/data/plasmid/nr
 # 统计序列长度
 faops size ../RefSeq/plasmid.fa > refseq.sizes
 
-# 默认的字段分隔符：TSV 使用 TAB，wc 是 Word Count 的缩写，计数，-l 选项可以获得指定文件内容的行数,每行以回车键作为结尾进行统计
+# 默认的字段分隔符：TSV（Tab Separated Values），使用 TAB，wc 是 Word Count 的缩写，计数，-l 选项可以获得指定文件内容的行数,每行以回车键作为结尾进行统计
 #筛选出refseq.sizes文件里面序列长度小于等于2000的序列，并输出行数，2:2000中的2指的是第二列
 #tsv-filter命令 用于处理以制表符分隔的文件（TSV格式） 具体用法见https://github.com/eBay/tsv-utils/blob/master/docs/tool_reference/tsv-filter.md
 
@@ -478,6 +478,38 @@ cat connected.tsv | wc -l
 344446
 
 mkdir -p group#-p 确保目录名称存在，不存在的就建一个
+原始代码：
+cat connected.tsv |
+    perl -nla -F"\t" -MGraph::Undirected -MPath::Tiny -e '
+        BEGIN {
+            our $g = Graph::Undirected->new;
+        }
+
+        $g->add_edge($F[0], $F[1]);
+
+        END {
+            my @rare;
+            my $serial = 1;
+            my @ccs = $g->connected_components;
+            @ccs = map { $_->[0] }
+                sort { $b->[1] <=> $a->[1] }
+                map { [ $_, scalar( @{$_} ) ] } @ccs;
+            for my $cc ( @ccs ) {
+                my $count = scalar @{$cc};
+                if ($count < 50) {
+                    push @rare, @{$cc};
+                }
+                else {
+                    path(qq{group/$serial.lst})->spew(map {qq{$_\n}} @{$cc});
+                    $serial++;
+                }
+            }
+            path(qq{group/00.lst})->spew(map {qq{$_\n}} @rare);
+
+            path(qq{grouped.lst})->spew(map {qq{$_\n}} $g->vertices);
+        }
+    '
+代码详解：
 cat connected.tsv |
     perl -nla -F"\t" -MGraph::Undirected -MPath::Tiny -e '
     #Path::Tiny 文件路径实用程序；-e 参数后面跟着实际的 Perl 代码
@@ -491,22 +523,33 @@ cat connected.tsv |
             my @rare;#定义一个数组 @rare，用于存储连接组件中节点数量小于 50 的节点
             my $serial = 1;#定义一个变量 $serial，用于计数，作为输出文件的序号。
             my @ccs = $g->connected_components;#将$g 进行连通分量的划分，并将结果存储在数组 @ccs 中。
-            @ccs = map { $_->[0] }  
-            #如果返回值存储在list中，map()函数返回数组
-            # @ccs中储存了对比的第一个序列的名称
+        #下面三行代码是对连接组件 @ccs 进行排序，按照节点数量从大到小进行降序排序，并且只保留连通分量本身。最后将排序后的结果重新赋值给 @ccs 数组。
+            @ccs = map { $_->[0] } # map { $_->[0] } 表示对排序后的数组进行处理，只保留每个数组元素的第一个元素，即连通分量本身。
+            $_ 表示 map 函数的默认参数，表示 @ccs 数组中的当前元素
+            #map 函数，可以快速进行对数组或列表中的元素进行批量操作和转换
 
-            sort { $b->[1] <=> $a->[1] }  #将第二个序列从小到大排列
+            sort { $b->[1] <=> $a->[1] }  #表示按照索引为 1 的值进行降序排序
+            #{} 内是代码块；<=> 是数字比较运算符，用于比较两个数的大小；->[1] 是一个箭头操作符，用于访问数组或哈希表等引用类型数据结构中的成员。其中，[1] 表示访问数组或哈希表中索引为 1 的元素。$b->[1] 表示取出 $b 数组或哈希表中索引为 1 的元素的值
+            #$b 和 $a 是默认的比较变量，用于用于在排序函数中比较元素的值。
+
+
+#该代码片段的目的是为了给每个连通分量添加一个元素，包含连通分量本身和其节点数量
             map { [ $_, scalar( @{$_} ) ] } @ccs;
-            #如果返回值存储在scalar标量中，则代表map()返回数组的元素个数；返回ccs
+            #[] 表示一个数组引用或者说匿名数组。匿名数组可以用于临时保存一组数据，并可以在需要时进行处理或传递给其他函数。它不需要具体的数组变量名，只是一个内存中的临时数组。
+            #@{...} 语法可以访问数组或列表。
+            #scalar( @{$_} ) 表示取出数组引用 $_ 的元素列表，并使用 scalar 函数计算列表的大小。
 
             for my $cc ( @ccs ) {
                 my $count = scalar @{$cc};
                 if ($count < 50) {
-                    push @rare, @{$cc};  # push可向数组的末尾添加一个或多个元素，并返回新的长度
+                    push @rare, @{$cc};#是将数组 $cc 中的元素依次添加到数组 @rare 的末尾  
+                    # push可向数组的末尾添加一个或多个元素，并返回新的长度
                 }
                 else {
                     path(qq{group/$serial.lst})->spew(map {qq{$_\n}} @{$cc});
-                    $serial++;  #首先，计算连通分量内的顶点数量。如果数量小于 50，则将这些顶点添加到 @rare 数组中。否则，将这些顶点存储到以 $serial 命名的文件中，并递增 $serial 的值
+                    $serial++;  #将新数组存储到以 $serial 命名的文件中，并递增 $serial 的值
+                    #map {qq{$_\n}}：将 @{$cc} 数组的每个元素加上换行符 \n 并返回一个新的数组
+                    #spew：将内容逐行写入
                 }
             }
             path(qq{group/00.lst})->spew(map {qq{$_\n}} @rare);
@@ -520,8 +563,45 @@ cat connected.tsv |
 # elsif($a==$b){return 0;}
 # elsif($a>$b){return 1;}      
 # ‘->’符号是“插入式解引用操作符”（infix dereference operator）。 换句话说，它是调用由引用传递参数的子程序的方法。
-#map函数：map EXPR LIST，对list中的每个元素执行EXPR或BLOCK，返回新的list。对每一此迭代，$_中保存了当前迭代的元素的值。
+#map函数：用于对数组、列表或其他可迭代对象中的每个元素应用同一操作，并返回由操作结果组成的新的数组或列表。
+#在数组或列表中，元素的索引从 0 开始，所以第一个元素的索引是 0，第二个元素的索引是 1，以此类推。通过索引，可以访问和操作数组或列表中的特定元素。
 
+补充：scalar 函数用法
+在 Perl 中，scalar 是一个内置的函数，用于获取数组或哈希的上下文中的元素个数或哈希键值对的个数，也可以用于将数组或哈希强制转换为标量（scalar）上下文。它的语法如下：
+
+perl
+$scalar = scalar @array;    # 获取数组的元素个数
+$scalar = scalar %hash;     # 获取哈希的键值对个数
+
+$scalar = scalar($expression);  # 强制将表达式转换为标量（scalar）上下文
+以下是一些示例，展示了在 Perl 中使用 scalar 函数的用法：
+
+perl
+# 获取数组的元素个数
+my @array = (1, 2, 3, 4, 5);
+my $array_size = scalar @array;
+print "数组元素个数：$array_size\n";
+
+# 获取哈希的键值对个数
+my %hash = ("apple" => 1, "banana" => 2, "orange" => 3);
+my $hash_size = scalar %hash;
+print "哈希键值对个数：$hash_size\n";
+
+# 强制将表达式转换为标量（scalar）上下文
+my $result = scalar(10 + 20 * 30);
+print "结果：$result\n";
+输出:
+
+数组元素个数：5
+哈希键值对个数：3
+结果：610
+在第一个示例中，scalar @array 返回数组 @array 的元素个数（这里是 5）。
+
+在第二个示例中，scalar %hash 返回哈希 %hash 的键值对个数（这里是 3）。
+
+在第三个示例中，scalar(10 + 20 * 30) 将整个表达式转换为标量上下文，并返回结果 610。
+
+需要注意的是，当提供的参数不是数组或哈希时，scalar 函数会将参数转换为标量上下文，返回一个标量值。
 
 # get non-grouped
 # this will no be divided to subgroups
@@ -568,6 +648,39 @@ find group -maxdepth 1 -type f -name "[0-9]*.lst" | sort |
 
 # 对.lst.tsv-分别建树，并把每个树的分组分别存储在{.}.groups.tsv文件中
 
+原始代码：
+find group -maxdepth 1 -type f -name "[0-9]*.lst.tsv" | sort |
+    parallel -j 4 --line-buffer '
+        echo >&2 "==> {}"
+
+        cat {} |
+            tsv-select -f 1-3 |
+            Rscript -e '\''
+                library(readr);
+                library(tidyr);
+                library(ape);
+                pair_dist <- read_tsv(file("stdin"), col_names=F);
+                tmp <- pair_dist %>%
+                    pivot_wider( names_from = X2, values_from = X3, values_fill = list(X3 = 1.0) )
+                tmp <- as.matrix(tmp)
+                mat <- tmp[,-1]
+                rownames(mat) <- tmp[,1]
+
+                dist_mat <- as.dist(mat)
+                clusters <- hclust(dist_mat, method = "ward.D2")
+                tree <- as.phylo(clusters)
+                write.tree(phy=tree, file="{.}.tree.nwk")
+
+                group <- cutree(clusters, h=0.2) # k=3
+                groups <- as.data.frame(group)
+                groups$ids <- rownames(groups)
+                rownames(groups) <- NULL
+                groups <- groups[order(groups$group), ]
+                write_tsv(groups, "{.}.groups.tsv")
+            '\''
+    '
+
+代码详解：
 find group -maxdepth 1 -type f -name "[0-9]*.lst.tsv" | sort |
     parallel -j 4 --line-buffer '
         echo >&2 "==> {}"
@@ -575,12 +688,22 @@ find group -maxdepth 1 -type f -name "[0-9]*.lst.tsv" | sort |
         cat {} |
             tsv-select -f 1-3 |
             #TSV-SELECT 读取文件或标准输入，并将所选字段写入标准输出。字段按列出的顺序写入.--f|fields <field-list>- 要保留的字段。字段按列出的顺序输出。
-            Rscript -e '\''
+            Rscript -e '\''#从命令行运行 R 脚本最方便的方法是使用 Rscript；\表示转义符，用来转义后面的字符。
+        补充：
+        在 R 中，字符 \ 是一个转义字符，用于表示特殊字符或字符序列。
+        在命令 Rscript -e 中使用 \ 时，你需要使用两个连续的 \ 来表示一个普通的 \，即\\\\。
+        \\ 表示一个普通的 \ 字符。
+\" 表示一个普通的 " 字符。
+\' 表示一个普通的 ' 字符。
+\n 表示一个换行符。
+\t 表示一个制表符。
+
                 library(readr);读取矩形文本数据•阅读器
                 library(tidyr);类似Excel中数据透视表
                 library(ape);系统发育与进化分析(ape)包含了很多序列和进化树的操作
             #read_tsv 函数读取标准输入中的数据，并命名为 pair_dist。该数据包含两列，分别表示顶点对和对应的距离。
-                pair_dist <- read_tsv(file("stdin"), col_names=F);#file是一个带分隔符的ASCII文本文件，col_names列向量
+                pair_dist <- read_tsv(file("stdin"), col_names=F);
+                #read_tsv 函数用于读取tsv文件；file是一个带分隔符的ASCII文本文件，col_names列向量
                 tmp <- pair_dist %>%
             #将顶点对作为列名，距离作为值，并用默认值 1.0 填充缺失值。
                     pivot_wider( names_from = X2, values_from = X3, values_fill = list(X3 = 1.0) )
@@ -604,6 +727,7 @@ find group -maxdepth 1 -type f -name "[0-9]*.lst.tsv" | sort |
                 write_tsv(groups, "{.}.groups.tsv")
             '\''
     '
+
 运行中出现问题
 Error in library(readr) : there is no package called ‘readr’
 Execution halted
