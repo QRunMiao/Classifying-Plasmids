@@ -512,7 +512,7 @@ cat connected.tsv |
 代码详解：
 cat connected.tsv |
     perl -nla -F"\t" -MGraph::Undirected -MPath::Tiny -e '
-    #Path::Tiny 文件路径实用程序；-e 参数后面跟着实际的 Perl 代码
+    #Path::Tiny 提供了处理文件路径的简便方法；-e 参数后面跟着实际的 Perl 代码
         BEGIN {
             our $g = Graph::Undirected->new;
         }
@@ -698,35 +698,47 @@ find group -maxdepth 1 -type f -name "[0-9]*.lst.tsv" | sort |
 \n 表示一个换行符。
 \t 表示一个制表符。
 
-                library(readr);读取矩形文本数据•阅读器
-                library(tidyr);类似Excel中数据透视表
-                library(ape);系统发育与进化分析(ape)包含了很多序列和进化树的操作
+                library(readr);提供了用于高效读取和解析各种数据格式（如 CSV、TSV）的函数
+                library(tidyr);用于对数据进行整理、转换和清洗
+                library(ape);系统发育与进化分析Analyses of Phylogenetics and Evolution(ape)包含了很多序列和进化树的操作
             #read_tsv 函数读取标准输入中的数据，并命名为 pair_dist。该数据包含两列，分别表示顶点对和对应的距离。
                 pair_dist <- read_tsv(file("stdin"), col_names=F);
-                #read_tsv 函数用于读取tsv文件；file是一个带分隔符的ASCII文本文件，col_names列向量
-                tmp <- pair_dist %>%
+                #read_tsv 函数用于读取tsv文件；file是一个带分隔符的ASCII文本文件，col_names列向量，col_names=F时，表示不将文件的第一行作为列名，而将其视为数据的一部分
+                tmp <- pair_dist %>% #管道操作符 %>%，它可以将前一个对象的结果作为输入传递给后一个操作。
             #将顶点对作为列名，距离作为值，并用默认值 1.0 填充缺失值。
                     pivot_wider( names_from = X2, values_from = X3, values_fill = list(X3 = 1.0) )
-                    #用%>%来强调操作序列，pivot_wider()函数可用于将数据帧从长格式转换为宽格式
+                    pivot_wider()函数可用于将数据帧从长格式转换为宽格式
             #将转换后的数据转换为矩阵，去除第一列，并将第一列作为行名
                 tmp <- as.matrix(tmp)#tmp临时文件
-                mat <- tmp[,-1]#mat构造二维向量
+                mat <- tmp[,-1]#[,-1]表示选择除了第一列以外的所有列
+                #mat通常是指矩阵（matrix）对象。矩阵是一种二维的数据结构，其中包含了相同类型的元素，并按行和列进行排列。您可以将矩阵看作是一个由行和列组成的网格
                 rownames(mat) <- tmp[,1]#rownames，行名称
 
-                dist_mat <- as.dist(mat)#as.dist 函数将矩阵转换为距离矩阵
-                clusters <- hclust(dist_mat, method = "ward.D2")#hclust 函数基于距离矩阵进行层次聚类，并选择 "ward.D2" 方法-ward离差平方和法,
-            #将聚类结果转换为基本树结构，并使用 write.tree 函数将树写入以文件名为基础的 ".tree.nwk" 文件;phylo的本质是list，包括进化树末端分类单元名称（tip label），枝长（edge length）等
-                tree <- as.phylo(clusters)
-                write.tree(phy=tree, file="{.}.tree.nwk")
+                dist_mat <- as.dist(mat)#as.dist 函数将矩阵转换为距离矩阵；dist()函数计算距离矩阵
+                clusters <- hclust(dist_mat, method = "ward.D2")#hclust 函数基于距离矩阵进行层次聚类，并选择 "ward.D2" 方法-用 Ward's minimum variance 方法（基于属性差异平方和的距离算法最小化集群内属性差异的方差）来度量聚类中心之间的差异，并在迭代过程中逐步合并最相似的聚类。
+            #将聚类结果转换为基本树结构，并使用 write.tree 函数将树写入以文件名为基础的 ".tree.nwk" 文件(nwk
+            -Newick);phylo的本质是list，包括进化树末端分类单元名称（tip label），枝长（edge length）等
+           
+                tree <- as.phylo(clusters)#as.phylo() 函数是 ape 包中的函数，用于将其他对象（如聚类结果或距离矩阵）转换为 phylo 对象，以便进行进一步的分析和可视化。
 
-                group <- cutree(clusters, h=0.2) #cutree 函数将聚类结果划分为若干组，阈值参数设置为 0.2
-                groups <- as.data.frame(group)#将划分结果转换为数据框
-                groups$ids <- rownames(groups)#并添加一列作为顶点标识符
-                rownames(groups) <- NULL
-                groups <- groups[order(groups$group), ]
+                write.tree(phy=tree, file="{.}.tree.nwk")#{.} 是一个占位符，表示在文件名中使用与输入文件相同的名称
+
+                group <- cutree(clusters, h=0.2)# k=3
+                 #cutree 函数将聚类结果划分为若干组，h=0.2 表示以阈值为 0.2 的水平对聚类结果进行切割。这里指定了 k=3，表示期望最终划分为 3 个簇。
+                groups <- as.data.frame(group)#as.data.frame() 函数将 划分结果 转换为数据框
+
+                groups$ids <- rownames(groups)#将groups 数据框中的行名称（row names）赋值给一个名为 "ids" 的新列
+
+                rownames(groups) <- NULL#rownames() 函数将行名称清除
+
+                groups <- groups[order(groups$group), ]#groups$group: 这是数据框 groups 中的一个列，用于排序。在这里，它代表了聚类标签。
+                order() 函数按照升序排列的顺序
+                逗号 , 在 R 中表示选择数据框中的行和列；在这里，逗号之后的部分为空，表示选择所有的列。
                 write_tsv(groups, "{.}.groups.tsv")
             '\''
     '
+#系统进化树(Phylogenetic Tree)
+格式简介 https://cloud.tencent.com/developer/article/1625186
 
 运行中出现问题
 Error in library(readr) : there is no package called ‘readr’
@@ -753,16 +765,30 @@ q()#退出R
 # subgroup
 mkdir -p subgroup
 cp group/lonely.lst subgroup/
-
+原代码：
+find group -name "*.groups.tsv" | sort |
+    parallel -j 1 -k '
+        cat {} | sed -e "1d" | xargs -I[] echo "{/.}_[]"
+    ' |
+    sed -e 's/.lst.groups_/_/' |
+    perl -na -F"\t" -MPath::Tiny -e '
+        path(qq{subgroup/$F[0].lst})->append(qq{$F[1]});
+    '
+代码详解：
 find group -name "*.groups.tsv" | sort |
     parallel -j 1 -k ' #--keep-order/-k   强制使输出与参数保持顺序 --keep-order/-k
         cat {} | sed -e "1d" | xargs -I[] echo "{/.}_[]"
-        # sed主要是以行为单位进行处理，可以将数据行进行替换、删除、新增、选取等特定工作.sed -e 多次编辑不需要管道符;删除第一行的列名。d代表删除 d前面的数字代表删除第一行，该命令不会修改文件本身
-        # xargs 是一个强有力的命令，它能够捕获一个命令的输出，然后传递给另外一个命令，适用于不适合用管道符的命令。规定命名方法 例：{}=group/1.lst.groups.tsv；i 或者是-I，将xargs的每项名称，一般是一行一行赋值给 {}，可以用 {} -代替，I[]从标准读取的名称=每一个聚类的序号；{/.}=1.lst.groups；{/.}_[]=1.lst.groups_1
+        #cat 命令用于将文件的内容打印到标准输出。在这里，{} 是一个占位符，通常用于批量处理多个文件，表示当前正在处理的文件。所以，cat {} 的作用是将当前文件的内容输出到标准输出流。
+        # sed (Stream Editor) 是一个流编辑器，主要是以行为单位进行处理，可以将数据行进行替换、删除、新增、选取等特定工作.sed -e 多次编辑不需要管道符;删除第一行的列名。d代表删除 d前面的数字代表删除第一行，该命令不会修改文件本身
+        # xargs 是一个强有力的命令，它能够捕获一个命令的输出，然后传递给另外一个命令，适用于不适合用管道符的命令。xargs 命令用于构建和执行命令行参数列表。i 或者是-I，将xargs的每项名称，一般是一行一行赋值给 {}，可以用 {} -代替，I[]从标准读取的名称=每一个聚类的序号；这里规定命名方法 例：{}=group/1.lst.groups.tsv；{/.}=1.lst.groups；{/.}_[]=1.lst.groups_1;_ 是一个普通的下划线字符;[] 是占位符，表示输入的值在这个位置被替换。
+        #在 Shell 中，{...} 是一种参数替换语法，其中 ... 表示要进行替换的内容。在这种情况下，/ 是用于字符串操作的特殊字符之一.{/.} 表示将变量中的字符串从最后一个斜杠字符开始删除，以获得文件名而不包括路径和扩展名。
     ' |
-    sed -e 's/.lst.groups_/_/' |  #s ：取代，即1_1
+    sed -e 's/.lst.groups_/_/' |  #s ：替代，表示替换字符串 ".lst.groups_" 为 "_"，即1_1
     perl -na -F"\t" -MPath::Tiny -e '
-        path(qq{subgroup/$F[0].lst})->append(qq{$F[1]});
+    #使用输入行的第一列构建文件路径，然后将输入行的第二列内容追加到该文件中。
+        path(qq{subgroup/$F[0].lst})#构建的路径是在名为 "subgroup" 的目录下，将第一列作为文件名并以 ".lst" 结尾
+        ->append(qq{$F[1]});
+        #append() 是一个方法，通常用于向文件中追加内容；不会影响或改变原文件中已经存在的内容。
     '
 
 # ignore small subgroups 删掉了 一个簇中少于5个枝的簇，放在lonely.lst中
@@ -779,14 +805,14 @@ find subgroup -name "*.lst" | sort |
 # append ccs 将重复的序列也保存subgroup中
 cat ../nr/connected_components.tsv |
     parallel -j 1 --colsep "\t" '#-colsep把行切分成列
-        file=$(rg -F -l  "{1}" subgroup)
+        file=$(rg -F -l  "{1}" subgroup)#{1} 是一个占位符；查找名为 "subgroup" 的文件中出现 {1} 所代表的文本字符串，并将匹配到的文件名赋给变量 file
         echo {} | tr "[:blank:]" "\n" >> ${file}
-    '
-# rg: 递归地在当前目录中搜索匹配模式的行，比grep更高级
-# -F/--fixed-strings：将模式视为文字字符串而不是正则表达式
-# -l/--file-with-matches: 打印至少有一个匹配的路径并抑制匹配内容
+    '#tr "[:blank:]" "\n"表示将空格和制表符替换为换行符
+# Ripgrep（简称为 rg）: 递归地在当前目录中搜索匹配模式的行，在速度和功能上比grep更有优势
+# -F/--fixed-strings：精确查找，将模式视为文字字符串而不是正则表达式
+# -l/--file-with-matches: 只输出匹配到的文件名，而不是匹配到的具体行内容
 # tr: 将标准输入复制到标准输出，替换或删除所选字符
-# "[:blank:]": 所有水平空格 - POSIX 基本正则表达式
+# 正则表达式中，[:blank:] 表示空格和制表符这两个空白字符
 
 # remove duplicates 因为上一步将所有相关序列名称都放入${file}会有重复，下一步去重
 find subgroup -name "*.lst" | sort |
@@ -813,7 +839,7 @@ wc -l subgroup/* |
     
 # 根据制表符分隔的文件的第一个字段的值，筛选出值小于等于10的行
 wc -l subgroup/* |
-    perl -pe 's/^\s+//' |#-P 假设像-n一样的循环，但也打印行，像sed；替换：s///，^匹配字符开头的字符，\s+和 [\n\t\r\f]+ 一样
+    perl -pe 's/^\s+//' |#-p 选项表示逐行处理输入，并打印结果。；替换：s///，^匹配字符开头的字符，\s+和 [\n\t\r\f]+ 一样
     tsv-filter -d" " --le 1:10 |#-d 分隔符
     wc -l
 419
@@ -856,6 +882,7 @@ cat next.tsv |
         GROUP_NAME={/.}  
         #等于subgroup/00_27.lst去掉目录和后缀，即00_27
         TARGET_NAME=$(head -n 1 {} | perl -pe "s/\.\d+//g")   # 去掉NC_002122.1的.后面的数字
+        #"s/\.\d+//g"表示将第一行中的所有 . 后跟一个或多个数字的部分替换为空字符串；g 表示全局替换
 
         SERIAL={#}
         COUNT=$(cat {} | wc -l)
@@ -883,14 +910,16 @@ cat next.tsv |
 # split-name   命令faops split-name 可以按序列名称对序列文件进行切割. 
 find ../GENOMES -maxdepth 1 -type f -name "*.fa" | sort |
     parallel -j 4 '
-        faops split-name {} {.}  # 输出文件夹名称去掉.fa，即00_27
+        faops split-name {} {.} 
+        #{.}：这是一个特殊的语法，代表文件名的基本部分（不包括扩展名）。在这里，它表示将文件名中的基本部分作为输出，即输出文件夹名称去掉.fa，即00_27
     '
 
 # 给每个单独的序列建文件夹
 # mv to dir of basename
 find ../GENOMES -maxdepth 2 -mindepth 2 -type f -name "*.fa" | sort |
     parallel -j 4 '
-        mkdir -p {.}#使用文件路径创建一个同名的目录
+        mkdir -p {.}#创建一个与文件名相同的目录（如果不存在）
+        #{.} 是一个占位符，表示当前处理的文件名的基本部分（不包括扩展名）。通过使用 {.}，可以将当前处理的文件名的基本部分作为目录名，然后使用 -p 选项来创建该目录。如，如果当前处理的文件名是 example.fa，那么运行命令 mkdir -p {.} 将会创建一个名为 example 的目录
         mv {} {.} #将找到的文件移动到相应的目录中
     '
 
@@ -901,13 +930,20 @@ cd /mnt/c/shengxin/data/plasmid
 cat taxon/group_target.tsv |
     sed -e '1d' | #删除第一行
     parallel --colsep '\t' --no-run-if-empty --linebuffer -k -j 4 ' #-colsep把行切分成列
-        echo -e "==> Group: [{2}]\tTarget: [{4}]\n"
+        echo -e "==> Group: [{2}]\tTarget: [{4}]\n"#用于输出一条格式化的消息。Group: [{2}]：这是一个格式化的字符串，其中{2}是一个占位符，表示输入的第2个字段的值。这个字符串表示群组的信息，[{2}]表示占位符的值将被替换为实际的群组值。
+        #Target: [{4}]：这是另一个格式化的字符串，其中{4}是一个占位符，表示输入的第4个字段的值。这个字符串表示目标的信息，[{4}]表示占位符的值将被替换为实际的目标值
+        #==>：这是一个字符串，表示一个箭头，可能用于标识特定的消息或分隔不同的部分
+        #花括号 {}：在字符串中，花括号 {} 通常用于指示一个占位符，表示需要在运行时替换为具体的值。
+        #方括号 []：在字符串中，方括号 [] 通常用于限定一个特定的字符或一组字符的范围。
+        #因此，在字符串 [{4}] 中，花括号 {} 表示占位符，而方括号 [] 只是普通字符，不具有特殊含义。
 
         for name in $(cat taxon/{2}.sizes | cut -f 1); 
         do #cat taxon/00_27.sizes 是每一个簇中具体的每个序列+序列碱基数 | 只提取序列名称NC_001496等 
             egaz prepseq GENOMES/{2}/${name} 
              #GENOMES/00_27/NC_001496
         done
+        #egaz是一个命令行工具，用于操作和处理基因组数据。prepseq是egaz的一个子命令，用于预处理序列文件
+        #GENOMES/{2}/${name}是参数部分。GENOMES/{2}表示路径，其中{2}是一个占位符，表示输入的第2个字段，用于构建路径名。${name}也是一个占位符，表示循环中提取的值，用于构建文件名或者指定需要处理的文件。
     '
 #prepseq: preparing steps for lastz#lastz对两条DNA序列进行比对
 ```
@@ -919,7 +955,7 @@ cat taxon/*.sizes | cut -f 1 | wc -l
 
 #用于计算taxon 目录下多个文件中的第二个字段的数值的总和
 cat taxon/*.sizes | cut -f 2 | paste -sd+ | bc
-#paste 指令会把每个文件以列对列的方式，一列列地加以合并；-d<间隔字，用指定的间隔字符取代跳格字符。-s或--serial 　串列进行而非平行处理；paste -sd+：将切割后的每行数字使用加号连接起来。
+#paste 指令会把每个文件以列对列的方式，一列列地加以合并；-d<间隔字，用指定的间隔字符取代跳格字符。-s或--serial 　串列进行而非平行处理；paste -sd+：将粘贴后的每行数字使用加号连接起来。
 #bc：通过 bc 命令执行基本计算，类似于计算器
 922851803
 
@@ -932,8 +968,8 @@ cat taxon/group_target.tsv |
     parallel --colsep '\t' --no-run-if-empty --linebuffer -k -j 4 ' #-k 用于保持输出的顺序
         echo -e "==> Group: [{2}]\tTarget: [{4}]"
 
-        median=$(cat taxon/{2}.sizes | datamash median 2)  #计算当前组文件 {2}.sizes 中第2列的中位数；atamash 作为一个命令行程序可以对文本文件进行数字和文本相关的基本统计操作
-        mad=$(cat taxon/{2}.sizes | datamash mad 2) #mad绝对偏差中位数；计算当前组文件 {2}.sizes 中第2列的MAD
+        median=$(cat taxon/{2}.sizes | datamash median 2)  #计算当前组文件 {2}.sizes 中第2列的中位数；datamash 作为一个命令行程序可以对文本文件进行数字和文本相关的基本统计操作
+        mad=$(cat taxon/{2}.sizes | datamash mad 2) #mad 表示绝对中位差（Median Absolute Deviation）-是用原数据减去中位数后得到的新数据的绝对值的中位数, 差常用来估计标准差；计算当前组文件 {2}.sizes 中第2列的MAD
         lower_limit=$( bc <<< " (${median} - 2 * ${mad}) / 2" )  #低限度值
 
 #        echo $median $mad $lower_limit
@@ -942,9 +978,10 @@ cat taxon/group_target.tsv |
         if (( lines > 0 )); then
             echo >&2 "    $lines lines to be filtered"
             tsv-join taxon/{2}.sizes -e -f <(
+#tsv-join: 这个工具用于在两个 TSV 文件之间执行连接操作。在这里，第一个输入文件是 taxon/{2}.sizes。第二个输入文件是通过命令替换 <(...) 提供的内容
+            #--e 选项表示在连接时忽略没有匹配的行，-f 选项表示使用全外连接（full outer join）进行连接操作
 
-            #--e|exclude - Exclude matching records.
-            #--f|filter-file FILE - (Required) File with records to use as a filter.
+            全外连接是一种连接操作，它将保留两个输入文件中的所有行，如果某些行在一个输入文件中存在但在另一个输入文件中不存在，那么会使用空值填充不存在的部分
 
                     tsv-filter taxon/{2}.sizes --le "2:${lower_limit}"
                 ) \
@@ -956,8 +993,11 @@ cat taxon/*.sizes | cut -f 1 | wc -l
 6600
 cat taxon/*.sizes | cut -f 2 | paste -sd+ | bc
 921980223
+```
+- Rsync to hpcc
 
-Rsync to hpcc
+HPCC（High Performance Computing Cluster）是一个高性能计算集群，提供分布式计算能力和处理大规模数据的能力。它是由LexisNexis Risk Solutions开发的，用于处理复杂的数据分析和处理任务
+```
 rsync -avP \
     ~/data/plasmid/ \
     wangq@202.119.37.251:data/plasmid
@@ -979,18 +1019,20 @@ cat taxon/group_target.tsv |
         egaz template \
             GENOMES/{2}/{4} \#指定一个路径模板，其中 {2} 和 {4} 分别是变量，代表 taxon/group_target.tsv 文件中的第二列和第四列的值。这个路径模板将用于生成输入文件的路径
             $(cat taxon/{2}.sizes | cut -f 1 | grep -v -x "{4}" | xargs -I[] echo "GENOMES/{2}/[]") \
+            #xargs -I[] echo "GENOMES/{2}/[]"：为每一行生成一个新的路径，路径格式为 "GENOMES/{2}/[]"，其中 [] 是占位符，将被替换为该行的内容
             #grep -v：反向查找，只打印不匹配的行；x 只显示全列符合的列；grep -v -x "{4}" 筛选出不等于 {4} 的值
             --multi -o groups/{2}/ \#指定输出目录为 groups/{2}/，并使用 --multi 参数表示生成多个输出文件
             --order \#保持输入文件的顺序
             --parallel 24 -v #最大并行任务数为 24；-v：输出详细的运行日志信息
 
-#        bash groups/{2}/1_pair.sh
+#        bash groups/{2}/1_pair.sh#用于执行groups/{2}/ 目录下存在的名为 1_pair.sh 的脚本文件
 #        bash groups/{2}/3_multi.sh
 
-        bsub -q mpi -n 24 -J "{2}-1_pair" "bash groups/{2}/1_pair.sh"#使用 bsub 命令将 bash groups/{2}/1_pair.sh 提交给 MPI 队列执行，MPI是一套通信标准
+        bsub -q mpi -n 24 -J "{2}-1_pair" "bash groups/{2}/1_pair.sh"#使用 bsub 命令将 bash groups/{2}/1_pair.sh 提交给 MPI 队列执行
 #egaz 后端简单的基因组比对；template:用于创建bash执行文件
-#bsub，提交给lsf作业的命令。-q 选择队列；-q mpi：指定队列为 MPI 队列，表示提交给 MPI 并行计算集群来执行任务；-n 24 指定使用的进程数为 24；-J 作业的名字
+#bsub，bsub 是一个作业调度器命令，用于向lsf计算集群提交作业。-q 选择队列；-q mpi：指定队列为 MPI 队列，表示提交给 MPI 并行计算集群来执行任务，这样可以充分利用计算集群的资源，并实现更快的计算速度；-n 24 指定使用的进程数为 24；-J 作业的名字
 #LSF（Load Sharing Facility）是IBM旗下的一款分布式集群管理系统软件，负责计算资源的管理和批处理作业的调度
+#MPI 队列（Multiple Program Multiple Data）是作业调度器中的一个队列类型，专门用于运行使用 MPI 并行框架编写的并行程序。MPI 是一种常用的并行计算模型，可以在多个进程之间进行通信和协作，从而实现高性能的并行计算。MPI 队列通常配置了适当的资源（如进程数、内存等）来支持并行计算任务。
 
 #将 bash groups/{2}/3_multi.sh 脚本提交给 MPI 队列，等待依赖任务 {2}-1_pair 结束后执行，并使用 24 个并行处理器执行任务
 #-w  提交作业前，指定操作。即等待任务 {2}-1_pair 结束后再提交当前任务
