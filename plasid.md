@@ -30,8 +30,15 @@ gzip 压缩或解压缩。命令只能用来压缩文件，不能压缩目录
 -f或--force 　强行解压缩文件。即使存在同名文件也会覆盖
 >：重定向操作符，用于将标准输出（解压缩后的内容）重定向到文件中
 
-gbff是NCBI基因组数据库常见的基因组genbank格式文件，在实际分析中，常常需要gff格式或者gtf格式，所以就存在gbff转换gff格式的需求
-#gff/gtf是贮存这些注释信息的两种文件格式。 GFF (general feature format)：这种格式主要是用来注释基因组。 现大部分利用的是第三版，即gff3。 GTF (gene transfer format)：主要是用来对基因进行注释。当前所广泛使用的gtf格式为第二版，即gtf2
+
+GBFF（GenBank Flat File）：是是NCBI基因组数据库常见的基因组genbank格式文件。它包含了基因组序列的注释信息，如基因、CDS、蛋白质序列、启动子等。GBFF 文件通常包含多个记录，每个记录对应一个基因组或染色体的注释。这些注释包括序列特征的位置、功能描述和相关参考文献等。
+在实际分析中，常常需要gff格式或者gtf格式，所以就存在gbff转换gff格式的需求
+
+#gff/gtf是贮存这些注释信息的两种文件格式。
+GTF（Gene Transfer Format）：是一种常见的基因组注释文件格式，用于存储基因和转录本的结构信息。GTF 文件通常由转录组组装软件（如Cufflinks、StringTie）生成，其中包含了基因、转录本、外显子、内含子等注释信息。每一行代表一个特定的转录本或基因，包含了其所在染色体、起始位置、终止位置以及其他相关属性。
+
+GFF（General Feature Format）：与 GTF 类似，也是一种用于基因组注释的通用文件格式，可以描述基因、转录本、外显子、蛋白质结构等。GFF 文件是一种文本文件，由多行组成，每行代表一个特定的注释记录。每行包含了特征的位置、名称、类型和其他相关信息。
+
 
 #RefSeq（Reference Sequence）和GenBank是两个与生物序列相关的数据库。
 
@@ -42,78 +49,6 @@ GenBank是一个公共的DNA和RNA序列数据库，也由NCBI维护。它收集
 
 总之，RefSeq和GenBank都是由NCBI提供的对基因组、转录本和蛋白质序列进行存储、标准化和注释的数据库
 
-```
-进程
-
-```
-Welcome to the NCBI rsync server.
-
-
-receiving incremental file list
-created directory RefSeq
-./
-plasmid.1.1.genomic.fna.gz
-    181,731,328  59%  183.91kB/s    0:11:11
-    305,217,663 100%  176.01kB/s    0:28:13 (xfr#1, to-chk=28/30)
-plasmid.1.2.genomic.fna.gz
-    112,015,213 100%  239.16kB/s    0:07:37 (xfr#2, to-chk=27/30)
-plasmid.1.genomic.gbff.gz
-    347,973,266 100%  467.85kB/s    0:12:06 (xfr#3, to-chk=26/30)
-plasmid.1.protein.faa.gz
-        135,747 100%  530.26kB/s    0:00:00 (xfr#4, to-chk=25/30)
-plasmid.1.protein.gpff.gz
-        331,121 100%  370.83kB/s    0:00:00 (xfr#5, to-chk=24/30)
-plasmid.1.rna.fna.gz
-          3,652 100%    4.07kB/s    0:00:00 (xfr#6, to-chk=23/30)
-plasmid.1.rna.gbff.gz
-          8,133 100%    8.77kB/s    0:00:00 (xfr#7, to-chk=22/30)
-plasmid.2.1.genomic.fna.gz
-    303,700,938 100%    1.20MB/s    0:04:02 (xfr#8, to-chk=21/30)
-plasmid.2.2.genomic.fna.gz
-    116,098,661 100%    2.79MB/s    0:00:39 (xfr#9, to-chk=20/30)
-plasmid.2.genomic.gbff.gz
-    343,969,099 100%    1.97MB/s    0:02:46 (xfr#10, to-chk=19/30)
-plasmid.3.1.genomic.fna.gz
-    304,120,161 100%  943.05kB/s    0:05:14 (xfr#11, to-chk=18/30)
-plasmid.3.2.genomic.fna.gz
-    100,498,202 100%  568.31kB/s    0:02:52 (xfr#12, to-chk=17/30)
-plasmid.3.genomic.gbff.gz
-    329,396,973 100%  450.57kB/s    0:11:53 (xfr#13, to-chk=16/30)
-plasmid.4.1.genomic.fna.gz
-    303,747,221 100%  474.68kB/s    0:10:24 (xfr#14, to-chk=15/30)
-plasmid.4.2.genomic.fna.gz
-    113,064,878 100%    1.40MB/s    0:01:17 (xfr#15, to-chk=14/30)
-plasmid.4.genomic.gbff.gz
-    341,510,422 100%    1.31MB/s    0:04:08 (xfr#16, to-chk=13/30)
-plasmid.5.1.genomic.fna.gz
-    161,291,365 100%    2.12MB/s    0:01:12 (xfr#17, to-chk=12/30)
-plasmid.5.genomic.gbff.gz
-    132,091,191 100%  626.88kB/s    0:03:25 (xfr#18, to-chk=11/30)
-plasmid.5.protein.faa.gz
-          8,971 100%   11.65kB/s    0:00:00 (xfr#19, to-chk=10/30)
-plasmid.5.protein.gpff.gz
-         16,883 100%   21.72kB/s    0:00:00 (xfr#20, to-chk=9/30)
-plasmid.nonredundant_protein.1.protein.faa.gz
-    137,524,098 100%    3.57MB/s    0:00:36 (xfr#21, to-chk=8/30)
-plasmid.nonredundant_protein.1.protein.gpff.gz
-    282,429,424 100%    6.35MB/s    0:00:42 (xfr#22, to-chk=7/30)
-plasmid.nonredundant_protein.2.protein.faa.gz
-    115,966,531 100%    2.69MB/s    0:00:41 (xfr#23, to-chk=6/30)
-plasmid.nonredundant_protein.2.protein.gpff.gz
-    261,829,661 100%    2.53MB/s    0:01:38 (xfr#24, to-chk=5/30)
-plasmid.nonredundant_protein.3.protein.faa.gz
-     92,394,580 100%    3.99MB/s    0:00:22 (xfr#25, to-chk=4/30)
-plasmid.nonredundant_protein.3.protein.gpff.gz
-    213,140,858 100%    8.44MB/s    0:00:24 (xfr#26, to-chk=3/30)
-plasmid.nonredundant_protein.4.protein.faa.gz
-     25,394,283 100%    4.39MB/s    0:00:05 (xfr#27, to-chk=2/30)
-plasmid.nonredundant_protein.4.protein.gpff.gz
-     55,526,413 100%    3.74MB/s    0:00:14 (xfr#28, to-chk=1/30)
-plasmid.wgs_mstr.gbff.gz
-         16,239 100%   30.32kB/s    0:00:00 (xfr#29, to-chk=0/30)
-
-sent 658 bytes  received 4,500,522,600 bytes  744,441.86 bytes/sec
-total size is 4,499,421,847  speedup is 1.00
 ```
 
 CSV（Comma-Separated Values，逗号分隔的值）。csv 文件是一个存储表格和电子表格信息的纯文本文件，其内容通常是一个文本、数字或日期的表格
@@ -151,6 +86,7 @@ LANGUAGE 可以指定多个语言编码，并按优先级排列，而 LANG 只�
 
 ```
 ```
+# 将所有的gbff文件提取出来整合到一个文件里面
 perl ~/Scripts/withncbi/taxon/gb_taxon_locus.pl genomic.gbff > refseq_id_seq.csv
 
 运行时无gb_taxon_locus.pl文件，所以在本地建立文件，不能直接wget下载，会把整个网页下载下来，直接建立文件，把文件中的内容复制下来即可。或者在终端用vim建立本地文件，但只在当时的窗口有效，关掉就无效了
@@ -199,7 +135,10 @@ refseq_id_seq.csv 内容：
 ```
 
 
-3. genomic.fna 文件: FNA 文件是FASTA格式 DNA和蛋白质序列比对文件，其存储可被分子生物学软件使用的DNA信息
+3. genomic.fna 文件: FNA 文件是FASTA格式 
+fna （fasta nucleic acid file）所有核酸序列信息
+ffn （fasta nucleotide coding regions file）所有基因的核酸序列信息
+faa （fasta Amino Acid file） 即所有基因对应的蛋白质序列信息
 ```
 gzip -dcf RefSeq/plasmid.1.1.genomic.fna.gz |
 > grep "^>" |#^ 是一个正则表达式元字符，它用于匹配文本的开头位置
@@ -225,25 +164,13 @@ faops n50 -S -C RefSeq/*.genomic.fna.gz
 S       5985712216
 C       75816
 
-#将*.genomic.fna.gz写入RefSeq/plasmid.fa
+#将所有的fna文件整合成一个fa文件
 gzip -dcf RefSeq/*.genomic.fna.gz > RefSeq/plasmid.fa
 ```
 
 **MinHash to get non-redundant plasmids**
 
-要使用 MinHash 获取非冗余质粒（plasmids）的方法通常包括以下步骤：
-
-1.数据预处理：准备一组质粒序列数据，可以是以 FASTA 或其他格式存储的 DNA 序列文件。
-
-2.MinHash 哈希函数：选择适当的 MinHash 哈希函数，通常是随机生成的。这些哈希函数能够将输入的质粒序列映射到一个固定大小的哈希签名（signature）。
-
-3.建立哈希签名集合：对每个质粒序列应用 MinHash 哈希函数，并将生成的哈希签名收集到一个集合中。
-
-4.计算相似度：将每对质粒的哈希签名进行比较，计算它们之间的相似度。常用的计算方法是 Jaccard 相似度，它衡量两个集合的交集与并集之间的比例。
-
-5.阈值筛选：设置一个相似度阈值，根据该阈值确定哪些质粒被认为是冗余的。如果两个质粒的相似度超过阈值，则它们可能是冗余的。
-
-6.非冗余质粒选择：根据相似度阈值筛选的结果，选择一组非冗余的质粒。
+此部分的思路为将收集到的所有质粒的序列整合到一个fa文件中，按照他们序列的大小进行第一步筛选，除去长度小于2000的序列；在利用mash对长度大于2000的序列进行分析。计算它们的遗传距离，将遗传距离大于0.01的都保留，遗传距离小于0.01的保留其中一个就行。最终得到非冗余质粒序列集合文件refseq.nr.fa
 
 Hash，一般翻译做散列、杂凑，是把任意长度的输入（又叫做预映射pre-image）通过散列算法变换成固定长度的输出，该输出就是散列值。简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要的函数。
 
@@ -282,7 +209,7 @@ tsv-filter refseq.sizes --le 2:2000 | wc -l#--le 选项
 
 ```
 # some根据列表提取特定序列，<表示输入重定向
-#从 "../RefSeq/plasmid.fa" 文件中提取符合 "refseq.sizes" 文件中第二列中值大于2000的行的序列，并将结果存储到 "refseq.fa" 文件中。
+# 将整合的fa文件中的序列大于2000的提取出来并保存到refseq.fa文件中
 faops some ../RefSeq/plasmid.fa <(tsv-filter refseq.sizes --gt 2:2000) refseq.fa
 
 # 将reads打断成更小的k-mers
@@ -300,7 +227,7 @@ mash的两个基本功能：sketch 功能将序列转化为哈希结构图。 di
 cat refseq.fa |
     mash sketch -k 21 -s 1000 -i -p 8 - -o refseq.plasmid.k21s1000.msh
 
-# split 将总dna序列分成65个小文件
+# split 将大于2000的序列名称提取出来并且按照1000行为一个标准分割成多个文件
 mkdir -p job
 faops size refseq.fa |
     cut -f 1 |
@@ -321,7 +248,7 @@ ls
 002  005  008  011  014  017  020  023  026  029  032  035  038  041  044  047  050  053  056  059  062  065
 #结果，经过处理，分成了67个文件
 
-# 将原本大的总dna分成小文件排序并且分别划分成21-kmers
+# 从分割的文件中按照名称提取出来，每一个设置一个mash草图
 find job -maxdepth 1 -type f -name "[0-9]??" | sort |
     parallel -j 4 --line-buffer '
         echo >&2 "==> {}"#打印当前处理的文件名，{}  是 parallel 命令的占位符，表示从管道获取的文件名；==> 是一个字符串，用于在标准错误流中打印一条消息
@@ -355,7 +282,7 @@ mash dist -p 6 026.msh ../refseq.plasmid.k21s1000.msh > 026.tsv
 find job -maxdepth 1 -type f -name "[0-9]??" | sort |
     parallel -j 16 '
         cat {}.tsv |
-            tsv-filter --ff-str-ne 1:2 --le 3:0.01# --ff-str-ne 1:2,表示筛选出第一列与第二列不相等的行
+            tsv-filter --ff-str-ne 1:2 --le 3:0.01# --ff-str-ne 1:2,表示筛选出第一列与第二列不相等的行（第一列为参考ID、第二列为查询ID；参考ID与查询ID不相等，第三列为距离小于0.01）
     ' \#\ 表示当前命令未结束；使用 \ 可以将一条命令分成多行书写，提高代码可读性并方便长命令的编写。
     > redundant.tsv
 
@@ -415,8 +342,11 @@ wc -l connected_components.tsv components.list
   47864 total
   序列一共四万多条，相似的共4万条，只保留单一的六千多条即可
 
+# 提取序列大于2000的refseq.fa文件中遗传距离大于0.01的序列
 faops some -i refseq.fa components.list stdout > refseq.nr.fa #-i 提取的是list中不含有的序列
-faops some refseq.fa <(cut -f 1 connected_components.tsv) stdout >> refseq.nr.fa #再把redundant的序列集中挑第一个再补充加进去
+
+# 提取序列大于2000的refseq.fa文件中遗传距离小于0.01的序列中的第一个
+faops some refseq.fa <(cut -f 1 connected_components.tsv) stdout >> refseq.nr.fa 
 
 #rm -rf 删除当前目录下的所有文件及目录，并且是直接删除，无需逐一确认命令行为；-f, --force 忽略不存在的文件，从不给出提示。r,--recursive 指示rm将参数中列出的全部目录和子目录均递归地删除。
 rm -fr job
