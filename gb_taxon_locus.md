@@ -111,7 +111,7 @@ gb_taxon_locus.pl - scan a multi-sequence .gb file
 #-：这是一个命令行选项，用于指定脚本的参数或标志
 a：表示要扫描所有的序列。
 
-=head1 SYNOPSIS #指定当前段落的标记为 "NAME"，表示下面的内容是关于脚本名称的描述；SYNOPSIS 概述
+=head1 SYNOPSIS #特殊注释块，用于提供代码示例或模块使用的简单示例；SYNOPSIS 概述
 
     wget -N ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/organelle/plastid/plastid.1.genomic.gbff.gz #ftp开头直到最后的是要下载的文件的 URL；ftp.ncbi.nlm.nih.gov: 这是文件所在的 FTP 服务器的主机名。/genomes/refseq/organelle/plastid/: 这是文件在服务器上的目录路径。plastid.1.genomic.gbff.gz: 这是文件的名称，以 .gz 结尾表示文件是经过压缩的。
 
